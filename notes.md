@@ -1,1 +1,1 @@
-shared notes line v2 (fork side)
+shared notes line v2 (upstream side)
