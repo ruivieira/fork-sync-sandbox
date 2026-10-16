@@ -1,6 +1,0 @@
-# dependencies / build intermediates
-node_modules/
-lib/
-
-# dist/ is intentionally NOT ignored: the compiled bundle (dist/index.js) is
-# the artifact GitHub Actions executes and must be committed.
