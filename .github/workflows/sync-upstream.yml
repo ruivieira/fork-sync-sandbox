@@ -1,0 +1,21 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write          # push the sync branch
+  pull-requests: write     # open the pull request
+
+concurrency:
+  group: sync-upstream
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to the exact commit of the v1.0.0 tag in basic-ops-tasks.
+      # To bump: retag latest -> git rev-parse <tag>^{commit}, update the SHA.
+      - uses: ruivieira/basic-ops-tasks/fork-sync-action@25ae86d512838835bda14c301252ce1605b227ce # v1.0.0
