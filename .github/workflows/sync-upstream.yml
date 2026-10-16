@@ -1,0 +1,20 @@
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write          # push the sync branch
+  pull-requests: write     # open the pull request
+
+concurrency:
+  group: sync-upstream
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./fork-sync-action

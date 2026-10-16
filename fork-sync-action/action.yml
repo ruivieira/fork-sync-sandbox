@@ -1,0 +1,109 @@
+name: 'Fork Sync'
+description: >-
+  Keep a fork up to date with its upstream (parent) repository by opening a
+  pull request that carries the incoming commits.
+author: 'rui'
+
+branding:
+  icon: 'git-pull-request'
+  color: 'purple'
+
+inputs:
+  token:
+    description: >-
+      Token used to read repository info, push the sync branch and open the
+      pull request. Needs contents:write and pull-requests:write on the fork.
+    required: false
+    default: ${{ github.token }}
+  upstream-repo:
+    description: >-
+      Upstream repository to pull from, as "owner/name". Default: the parent of
+      the repository the action runs in.
+    required: false
+    default: ''
+  upstream-branch:
+    description: >-
+      Branch on the upstream repository to pull from. Default: the upstream
+      default branch.
+    required: false
+    default: ''
+  target-branch:
+    description: >-
+      Branch on the fork that receives the changes (the pull request base).
+      Default: the fork default branch.
+    required: false
+    default: ''
+  head-branch:
+    description: >-
+      Branch on the fork that carries the changes (the pull request head).
+      Default: "sync/upstream-<upstream-branch>".
+    required: false
+    default: ''
+  merge-strategy:
+    description: >-
+      "merge" (default): merge upstream into the target branch, fast-forwarding
+      when possible. "tip": point the head branch at upstream's tip and let the
+      pull request surface any divergence as conflicts.
+    required: false
+    default: 'merge'
+  fail-on-conflict:
+    description: >-
+      Fail the action instead of opening a conflicted pull request when the
+      merge conflicts.
+    required: false
+    default: 'false'
+  upstream-token:
+    description: >-
+      Token used to fetch from the upstream repository. Only needed when the
+      upstream repository is private and the main token cannot read it.
+      Default: same as token.
+    required: false
+    default: ''
+  pr-title:
+    description: 'Title for the pull request. Default: "Sync <upstream>:<branch> into <target>".'
+    required: false
+    default: ''
+  pr-body:
+    description: >-
+      Body for the pull request. Default: a summary with the incoming commits
+      and a warning banner when there are conflicts.
+    required: false
+    default: ''
+  labels:
+    description: 'Comma-separated labels to add to the pull request.'
+    required: false
+    default: ''
+  assignees:
+    description: 'Comma-separated GitHub usernames to assign the pull request to.'
+    required: false
+    default: ''
+  dry-run:
+    description: 'Run the sync logic but push nothing and open no pull request.'
+    required: false
+    default: 'false'
+  skip-pr:
+    description: 'Push the sync branch but do not open a pull request.'
+    required: false
+    default: 'false'
+
+outputs:
+  status:
+    description: '"up-to-date", "synced" or "conflicts".'
+  pull-request-number:
+    description: 'Number of the opened/updated pull request (empty when none).'
+  pull-request-url:
+    description: 'URL of the opened/updated pull request (empty when none).'
+  head-sha:
+    description: 'SHA of the head branch produced by this run.'
+  target-sha:
+    description: 'SHA of the target branch before the sync.'
+  upstream-sha:
+    description: 'SHA of the upstream branch that was synced.'
+  commit-count:
+    description: 'Number of commits the pull request brings in.'
+  pushed:
+    description: '"true" when the head branch was pushed to the fork.'
+
+runs:
+  using: 'node24'
+  main: 'dist/index.js'
