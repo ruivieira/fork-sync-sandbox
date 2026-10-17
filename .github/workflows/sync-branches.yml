@@ -13,7 +13,7 @@ jobs:
       contents: read
     steps:
       - id: preview
-        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        uses: ruivieira/basic-ops-tasks@v2.0.0 # Validate the newly published version tag.
         with:
           upstream-repo: ruivieira-forking/fork-sync-sandbox
           upstream-branch: security-validation-833bdd26
@@ -57,7 +57,7 @@ jobs:
       pull-requests: write
     steps:
       - id: create
-        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        uses: ruivieira/basic-ops-tasks@v2 # Validate the newly published major tag.
         with:
           upstream-repo: ruivieira-forking/fork-sync-sandbox
           upstream-branch: security-validation-833bdd26
