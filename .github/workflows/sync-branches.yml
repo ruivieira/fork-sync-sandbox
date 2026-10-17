@@ -18,9 +18,9 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Pinned to the exact commit of the v1.4.0 tag in basic-ops-tasks.
+      # Pinned to the exact commit of the v1 tag in basic-ops-tasks.
       # To bump: retag latest -> git rev-parse <tag>^{commit}, update the SHA.
-      - uses: ruivieira/basic-ops-tasks@838d5b387f64078aee97f595d2d4bcb1ce6005b7 # v1.4.0
+      - uses: ruivieira/basic-ops-tasks@9e7c6ea25e011631f82f0503a4842029f153894f # v1
         with:
           mode: branch
           source-branch: main
