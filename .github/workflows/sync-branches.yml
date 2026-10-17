@@ -1,27 +1,169 @@
-name: Sync branches
-
-# Cascade: whenever main advances (upstream-sync PR merged, direct push),
-# open/update a rolling PR that carries the new main commits into develop.
+name: Security release validation
 on:
-  workflow_dispatch: {}
-  push:
-    branches: [main]
-
-permissions:
-  contents: write          # push the sync branch
-  pull-requests: write     # open the pull request
-
+  workflow_dispatch:
+permissions: {}
 concurrency:
-  group: sync-branches
-
+  group: security-validation-833bdd26
+  cancel-in-progress: false
 jobs:
-  sync:
+  readonly:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
-      # Pinned to the exact commit of the v1 tag in basic-ops-tasks.
-      # To bump: retag latest -> git rev-parse <tag>^{commit}, update the SHA.
-      - uses: ruivieira/basic-ops-tasks@6defb068806dee0c1c44c6ac271cf9cf42d648be # v1
+      - id: preview
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: security-validation-833bdd26
+          target-branch: main
+          head-branch: sync/security-validation-833bdd26-readonly
+          dry-run: true
+      - name: Verify preview
+        env:
+          STATUS: ${{ steps.preview.outputs.status }}
+          PUSHED: ${{ steps.preview.outputs.pushed }}
+          PR: ${{ steps.preview.outputs.pull-request-number }}
+        run: |
+          test "$STATUS" = synced
+          test "$PUSHED" = false
+          test -z "$PR"
+      - id: denied
+        continue-on-error: true
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: security-validation-833bdd26
+          target-branch: main
+          head-branch: sync/security-validation-833bdd26-denied
+          skip-pr: true
+      - name: Verify read token cannot publish
+        env:
+          OUTCOME: ${{ steps.denied.outcome }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$OUTCOME" = failure
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/sync/security-validation-833bdd26-denied" > "$RUNNER_TEMP/ref.json" 2> "$RUNNER_TEMP/ref.err"; then
+            echo 'ERROR: read-only job created a branch'; exit 1
+          fi
+          grep -q 'HTTP 404' "$RUNNER_TEMP/ref.err"
+  write:
+    needs: readonly
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - id: create
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: security-validation-833bdd26
+          target-branch: main
+          head-branch: sync/security-validation-833bdd26-clean
+          pr-title: 'test: security release validation - upstream sync'
+      - id: repeat
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: security-validation-833bdd26
+          target-branch: main
+          head-branch: sync/security-validation-833bdd26-clean
+      - name: Verify rolling PR
+        env:
+          CREATED: ${{ steps.create.outputs.pull-request-number }}
+          UPDATED: ${{ steps.repeat.outputs.pull-request-number }}
+          PUSHED: ${{ steps.repeat.outputs.pushed }}
+        run: |
+          test -n "$CREATED"
+          test "$CREATED" = "$UPDATED"
+          test "$PUSHED" = true
+      - id: unverified
+        continue-on-error: true
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: security-validation-833bdd26
+          target-branch: main
+          head-branch: sync/security-validation-833bdd26-clean
+          skip-pr: true
+      - name: Verify unverified existing head is rejected
+        env:
+          OUTCOME: ${{ steps.unverified.outcome }}
+          EXPECTED: ${{ steps.repeat.outputs.head-sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$OUTCOME" = failure
+          actual=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/sync/security-validation-833bdd26-clean" --jq .object.sha)
+          test "$actual" = "$EXPECTED"
+      - id: adopt
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: security-validation-833bdd26
+          target-branch: main
+          head-branch: sync/security-validation-833bdd26-clean
+          skip-pr: true
+          allow-head-update: true
+      - name: Verify explicit adoption
+        env:
+          PUSHED: ${{ steps.adopt.outputs.pushed }}
+          PR: ${{ steps.adopt.outputs.pull-request-number }}
+        run: |
+          test "$PUSHED" = true
+          test -z "$PR"
+      - id: conflict
+        continue-on-error: true
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: security-validation-833bdd26
+          target-branch: security-validation-833bdd26-target
+          head-branch: sync/security-validation-833bdd26-conflict
+          fail-on-conflict: true
+          skip-pr: true
+      - name: Verify rejected conflict publishes nothing
+        env:
+          OUTCOME: ${{ steps.conflict.outcome }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$OUTCOME" = failure
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/sync/security-validation-833bdd26-conflict" > "$RUNNER_TEMP/ref.json" 2> "$RUNNER_TEMP/ref.err"; then
+            echo 'ERROR: rejected conflict created a branch'; exit 1
+          fi
+          grep -q 'HTTP 404' "$RUNNER_TEMP/ref.err"
+      - id: branches
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
         with:
           mode: branch
           source-branch: main
           target-branch: develop
+          head-branch: sync/security-validation-833bdd26-branches
+          merge-strategy: tip
+          pr-title: 'test: security release validation - branch sync'
+      - name: Verify branch sync
+        env:
+          STATUS: ${{ steps.branches.outputs.status }}
+          HEAD: ${{ steps.branches.outputs.head-sha }}
+          SOURCE: ${{ steps.branches.outputs.upstream-sha }}
+          PR: ${{ steps.branches.outputs.pull-request-number }}
+        run: |
+          test "$STATUS" = synced
+          test "$HEAD" = "$SOURCE"
+          test -n "$PR"
+      - id: current
+        uses: ruivieira/basic-ops-tasks@833bdd26bf295a23f1fe52ae00c7f968bcfd5c80
+        with:
+          upstream-repo: ruivieira-forking/fork-sync-sandbox
+          upstream-branch: main
+          target-branch: main
+      - name: Verify no-op and workspace cleanup
+        env:
+          STATUS: ${{ steps.current.outputs.status }}
+          PUSHED: ${{ steps.current.outputs.pushed }}
+        run: |
+          test "$STATUS" = up-to-date
+          test "$PUSHED" = false
+          test -z "$(find "$RUNNER_TEMP" -maxdepth 1 -type d -name 'fork-sync-*' -print -quit)"
