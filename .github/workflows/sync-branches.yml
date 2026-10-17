@@ -14,9 +14,9 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Feature-branch ref while branch-to-branch sync is under review;
-      # pin to the v1.1.0 tag/SHA once merged.
-      - uses: ruivieira/basic-ops-tasks/fork-sync-action@feat/branch-sync
+      # Pinned to the exact commit of the v1.1.0 tag in basic-ops-tasks.
+      # To bump: retag latest -> git rev-parse <tag>^{commit}, update the SHA.
+      - uses: ruivieira/basic-ops-tasks@de6832b03605bc7b15c6e443b8541aae44fdce70 # v1.1.0
         with:
           source-branch: develop
           target-branch: main
