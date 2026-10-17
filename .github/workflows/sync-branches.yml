@@ -1,0 +1,27 @@
+name: Sync branches
+
+# Cascade: whenever main advances (upstream-sync PR merged, direct push),
+# open/update a rolling PR that carries the new main commits into develop.
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+
+permissions:
+  contents: write          # push the sync branch
+  pull-requests: write     # open the pull request
+
+concurrency:
+  group: sync-branches
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # Pinned to the exact commit of the v1.2.0 tag in basic-ops-tasks.
+      # To bump: retag latest -> git rev-parse <tag>^{commit}, update the SHA.
+      - uses: ruivieira/basic-ops-tasks@a120469f8b315c4d838757489fd5dd0a5f316430 # v1.2.0
+        with:
+          mode: branch
+          source-branch: main
+          target-branch: develop
