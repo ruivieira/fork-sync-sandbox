@@ -20,7 +20,7 @@ jobs:
     steps:
       # Pinned to the exact commit of the v1 tag in basic-ops-tasks.
       # To bump: retag latest -> git rev-parse <tag>^{commit}, update the SHA.
-      - uses: ruivieira/basic-ops-tasks@7e17c5052ada85ec0567a4791c3a615bfa17a74c # v1
+      - uses: ruivieira/basic-ops-tasks@cdb560bd992944ab5ab656d6e8dbc0aa85bbb211 # v1
         with:
           mode: branch
           source-branch: main
