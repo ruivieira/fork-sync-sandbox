@@ -18,9 +18,9 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      # Iterating on feat/mode-input (mode input under review); re-pin to the
-      # next tag once merged.
-      - uses: ruivieira/basic-ops-tasks@feat/mode-input
+      # Pinned to the exact commit of the v1.2.0 tag in basic-ops-tasks.
+      # To bump: retag latest -> git rev-parse <tag>^{commit}, update the SHA.
+      - uses: ruivieira/basic-ops-tasks@a120469f8b315c4d838757489fd5dd0a5f316430 # v1.2.0
         with:
           mode: branch
           source-branch: main
