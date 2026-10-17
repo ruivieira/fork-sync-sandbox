@@ -1,7 +1,11 @@
 name: Sync branches
 
+# Cascade: whenever main advances (upstream-sync PR merged, direct push),
+# open/update a rolling PR that carries the new main commits into develop.
 on:
   workflow_dispatch: {}
+  push:
+    branches: [main]
 
 permissions:
   contents: write          # push the sync branch
@@ -19,5 +23,5 @@ jobs:
       - uses: ruivieira/basic-ops-tasks@feat/mode-input
         with:
           mode: branch
-          source-branch: develop
-          target-branch: main
+          source-branch: main
+          target-branch: develop
